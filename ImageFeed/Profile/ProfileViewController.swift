@@ -1,6 +1,7 @@
 import UIKit
 
 final class ProfileViewController: UIViewController {
+    
     private var nameLabel: UILabel?
     private var userNameLabel: UILabel?
     private var bioLabel: UILabel?
@@ -56,18 +57,22 @@ final class ProfileViewController: UIViewController {
         
         self.bioLabel = bioLabel
         
+        // MARK: - exitButton
+        let exitButtonImage = UIImage(named: "Exit")
+        
         let exitButton = UIButton.systemButton(
-            with: UIImage(systemName: "ipad.and.arrow.forward")!,
+            with: exitButtonImage ?? UIImage(),
             target: self,
             action: #selector(Self.didTapButton)
         )
+        
         
         exitButton.tintColor = .ypRedIOS
         exitButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(exitButton)
         exitButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16).isActive = true
         exitButton.widthAnchor.constraint(equalToConstant: 24).isActive = true
-                exitButton.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        exitButton.heightAnchor.constraint(equalToConstant: 24).isActive = true
         exitButton.centerYAnchor.constraint(equalTo: imageView.centerYAnchor).isActive = true
     }
     

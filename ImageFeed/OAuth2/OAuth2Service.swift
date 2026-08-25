@@ -14,7 +14,8 @@ final class OAuth2Service {
     
     private func makeOAuthTokenRequest(code:String) -> URLRequest? {
         
-        guard var urlComponents = URLComponents(string: "https://unsplash.com") else {
+        guard var urlComponents = URLComponents(string: "https://unsplash.com/oauth/token") else {
+            print("Error: Invalid URLComponents")
             return nil
         }
         urlComponents.queryItems = [
@@ -25,6 +26,7 @@ final class OAuth2Service {
             URLQueryItem(name: "grant_type", value: "authorization_code")
         ]
         guard let authTokenUrl = urlComponents.url else {
+            print("Error: Invalid URL")
             return nil
         }
         
@@ -33,7 +35,7 @@ final class OAuth2Service {
         return request
     }
     
-    func fetchOAuthToken(with code: String, completion: @escaping(Result<String, Error>) -> Void) {
+    func fetchAuthToken(with code: String, completion: @escaping(Result<String, Error>) -> Void) {
         
         guard let request = makeOAuthTokenRequest(code: code) else {
             completion(.failure(URLError(.badURL)))

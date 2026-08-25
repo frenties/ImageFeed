@@ -8,7 +8,7 @@ final class AuthViewController: UIViewController {
     weak var delegate: AuthViewControllerDelegate?
     
     private let oauth2Service = OAuth2Service.shared
-    
+    private let tokenStorage = OAuth2TokenStorage()
     private let showWebViewSegueIdentifier = "ShowWebView"
     
     override func viewDidLoad() {
@@ -23,8 +23,8 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem?.tintColor = UIColor(named:"ypBlack")
     }
     
-    private func fetchOAuthToken(with code: String) {
-        oauth2Service.fetchOAuthToken(with: code) { result in
+    private func fetchAuthToken(with code: String) {
+        oauth2Service.fetchAuthToken(with: code) { result in
         }
     }
 }
@@ -34,12 +34,14 @@ extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         vc.dismiss(animated: true)
         
-        oauth2Service.fetchOAuthToken(with: code) { [weak self] result in
+        oauth2Service.fetchAuthToken(with: code) { [weak self] result in
             guard let self = self else { return }
             
             switch result {
             case .success(let token):
+                self.tokenStorage.token = token
                 self.delegate?.didAuthenticate(self)
+                
             case .failure(let error):
                 print("Ошибка авторизации: \(error.localizedDescription)")
             }

@@ -6,7 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5EA141503035C7600075A703 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5EA1414F3035C7600075A703 /* WebKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		5EA1414F3035C7600075A703 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		5EFCE8CC2FF277F10099DFDB /* ImageFeed.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageFeed.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -36,16 +41,26 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5EA141503035C7600075A703 /* WebKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5EA1414E3035C75F0075A703 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5EA1414F3035C7600075A703 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		5EFCE8C32FF277F10099DFDB = {
 			isa = PBXGroup;
 			children = (
 				5EFCE8CE2FF277F10099DFDB /* ImageFeed */,
+				5EA1414E3035C75F0075A703 /* Frameworks */,
 				5EFCE8CD2FF277F10099DFDB /* Products */,
 			);
 			sourceTree = "<group>";

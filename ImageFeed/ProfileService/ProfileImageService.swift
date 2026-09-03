@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 struct ProfileImage: Codable {
     let small: String
@@ -26,6 +27,11 @@ final class ProfileImageService {
     static let shared = ProfileImageService()
     private init() {}
     
+    private let logger = Logger(
+           subsystem: Bundle.main.bundleIdentifier ?? "ImageFeed",
+           category: "ProfileImageService"
+       )
+    
     private(set) var avatarURL: String?
     private var task: URLSessionTask?
     
@@ -35,8 +41,8 @@ final class ProfileImageService {
         
         task?.cancel()
         
-        guard let token = OAuth2TokenStorage().token else {
-            print("[fetchProfileImageURL]: ProfileImageServiceError - Authorization token missing")
+        guard let token = OAuth2TokenStorage.shared.token else {
+            logger.error("[fetchProfileImageURL]: ProfileImageServiceError - Authorization token missing")
             completion(.failure(NSError(domain: "ProfileImageService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Authorization token missing"])))
             return
         }
@@ -65,7 +71,7 @@ final class ProfileImageService {
                     )
                 
             case .failure(let error):
-                print("[fetchProfileImageURL]: NetworkError - Ошибка запроса: \(error.localizedDescription)")
+                self.logger.error("[fetchProfileImageURL]: NetworkError - Ошибка запроса: \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }
@@ -76,7 +82,7 @@ final class ProfileImageService {
     
     private func makeProfileImageRequest(username: String, token: String) -> URLRequest? {
         guard let url = URL(string: "https://api.unsplash.com/users/\(username)") else {
-            print("[makeProfileImageRequest]: URLError - Не удалось создать URL для \(username)")
+            logger.error("[makeProfileImageRequest]: URLError - Не удалось создать URL для \(username)")
             return nil
         }
         

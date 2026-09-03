@@ -8,7 +8,7 @@ final class ProfileViewController: UIViewController {
     private var profileImageServiceObserver: NSObjectProtocol?
     
     private let avatarImageView: UIImageView = {
-        let profileImage = UIImage(named: "avatar")
+        let profileImage = UIImage(resource: .avatar)
         let imageView = UIImageView(image: profileImage)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.layer.cornerRadius = 35
@@ -60,9 +60,9 @@ final class ProfileViewController: UIViewController {
         bioLabel.topAnchor.constraint(equalTo: userName.bottomAnchor, constant: 8).isActive = true
         self.descriptionLabel = bioLabel
         
-        let exitButtonImage = UIImage(named: "Exit")
+        let exitButtonImage = UIImage(resource: .exit)
         let exitButton = UIButton.systemButton(
-            with: exitButtonImage ?? UIImage(),
+            with: exitButtonImage,
             target: self,
             action: #selector(self.didTapButton)
         )
@@ -100,7 +100,7 @@ final class ProfileViewController: UIViewController {
         else { return }
         
         avatarImageView.kf.setImage(with: url,
-                                    placeholder: UIImage(named: "avatar"),
+                                    placeholder: UIImage(resource: .avatar),
                                     options: [.cacheOriginalImage]
         )
     }

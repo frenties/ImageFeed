@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 enum AuthServiceError: Error {
     case invalidRequest
@@ -7,14 +8,14 @@ enum AuthServiceError: Error {
 final class OAuth2Service {
     static let shared = OAuth2Service()
     
-    private let dataStorage = OAuth2TokenStorage()
+    private let dataStorage = OAuth2TokenStorage.shared
     
     private var task: URLSessionTask?
     private var lastCode: String?
     
     private(set) var authToken: String? {
         get {
-            return dataStorage.token
+            dataStorage.token
         }
         set {
             dataStorage.token = newValue
@@ -93,6 +94,12 @@ final class OAuth2Service {
 
 extension URLSession {
     
+    private var logger: Logger {
+        Logger(subsystem: Bundle.main.bundleIdentifier ?? "ImageFeed",
+               category: "NetworkCore"
+        )
+    }
+    
     func data(
         for request: URLRequest,
         completion: @escaping (Result<Data, Error>) -> Void
@@ -106,7 +113,7 @@ extension URLSession {
         
         let task = dataTask(with: request) { data, response, error in
             if let error = error {
-                print("[data]: NetworkError - Ошибка запроса: \(error.localizedDescription), URL: \(request.url?.absoluteString ?? "")")
+                self.logger.error("[data]: NetworkError - Ошибка запроса: \(error.localizedDescription), URL: \(request.url?.absoluteString ?? "")")
                 fulfillCompletionOnTheMainThread(.failure(error))
                 return
             }
@@ -118,12 +125,12 @@ extension URLSession {
                     fulfillCompletionOnTheMainThread(.success(data))
                 } else {
                     let serverError = URLError(.badServerResponse)
-                    print("[data]: NetworkError - Некорректный статус-код: \(statusCode), URL: \(request.url?.absoluteString ?? "")")
+                    self.logger.error("[data]: NetworkError - Некорректный статус-код: \(statusCode), URL: \(request.url?.absoluteString ?? "")")
                     fulfillCompletionOnTheMainThread(.failure(serverError))
                 }
             } else {
                 let serverError = URLError(.badServerResponse)
-                print("[data]: NetworkError - Пустой ответ сервера или отсутствует HTTPURLResponse")
+                self.logger.error("[data]: NetworkError - Пустой ответ сервера или отсутствует HTTPURLResponse")
                 fulfillCompletionOnTheMainThread(.failure(serverError))
             }
         }
@@ -144,7 +151,7 @@ extension URLSession {
                     completion(.success(decodedObject))
                 } catch {
                     let rawDataString = String(data: data, encoding: .utf8) ?? ""
-                    print("[objectTask]: DecodingDataError - Ошибка декодирования: \(error.localizedDescription), Данные: \(rawDataString)")
+                    self.logger.error("[objectTask]: DecodingDataError - Ошибка декодирования: \(error.localizedDescription), Данные: \(rawDataString)")
                     completion(.failure(error))
                 }
             case .failure(let error):

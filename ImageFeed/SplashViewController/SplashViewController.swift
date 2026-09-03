@@ -4,11 +4,11 @@ final class SplashViewController: UIViewController {
     
     private let profileService = ProfileService.shared
     private let profileImageService = ProfileImageService.shared
-    private let storage = OAuth2TokenStorage()
+    private let storage = OAuth2TokenStorage.shared
     
     private let logoImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named:"appIcon")
+        imageView.image = UIImage(resource: .appIcon)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -59,8 +59,8 @@ final class SplashViewController: UIViewController {
         
         navigationController.modalPresentationStyle = .fullScreen
         
-        DispatchQueue.main.async { [weak self] in
-            self?.present(navigationController, animated: true, completion: nil)
+        DispatchQueue.main.async {
+            self.present(navigationController, animated: true, completion: nil)
         }
     }
     
@@ -81,13 +81,14 @@ final class SplashViewController: UIViewController {
             case .failure(let error):
                 print("Ошибка получения профиля: \(error.localizedDescription)")
             }
+            self.showAuthViewController()
         }
     }
     
     private func switchToTabBarController() {
-        guard let window = UIApplication.shared.windows.first else {
-            assertionFailure("Invalid window configuration")
-            return
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene, let window = windowScene.windows.first else {
+                    assertionFailure("Invalid window configuration")
+                    return
         }
         
         let tabBarController = UIStoryboard(name: "Main", bundle: .main).instantiateViewController(withIdentifier: "TabBarViewController")

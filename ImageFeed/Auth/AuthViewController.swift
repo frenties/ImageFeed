@@ -1,4 +1,5 @@
 import UIKit
+import os
 
 protocol AuthViewControllerDelegate: AnyObject {
     func didAuthenticate(_ vc:AuthViewController)
@@ -7,8 +8,13 @@ protocol AuthViewControllerDelegate: AnyObject {
 final class AuthViewController: UIViewController {
     weak var delegate: AuthViewControllerDelegate?
     
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.imagefeed",
+        category: "Authentication"
+    )
+    
     private let oauth2Service = OAuth2Service.shared
-    private let tokenStorage = OAuth2TokenStorage()
+    private let tokenStorage = OAuth2TokenStorage.shared
     private let showWebViewSegueIdentifier = "ShowWebView"
     
     override func viewDidLoad() {
@@ -61,7 +67,7 @@ extension AuthViewController: WebViewViewControllerDelegate {
             
             UIBlockingProgressHUD.dismiss()
             
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch result {
             case .success(let token):
@@ -69,7 +75,7 @@ extension AuthViewController: WebViewViewControllerDelegate {
                 self.delegate?.didAuthenticate(self)
                 
             case .failure(let error):
-                print("Ошибка авторизации: \(error.localizedDescription)")
+                self.logger.error("Authentication failed: \(error.localizedDescription, privacy: .public)")
                 self.showAlertError()
             }
         }

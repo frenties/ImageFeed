@@ -1,7 +1,26 @@
 import Foundation
 
+enum AuthServiceError: Error {
+    case invalidRequest
+}
+
 final class OAuth2Service {
     static let shared = OAuth2Service()
+    
+    private let dataStorage = OAuth2TokenStorage()
+    
+    private var task: URLSessionTask?
+    private var lastCode: String?
+    
+    private(set) var authToken: String? {
+        get {
+            return dataStorage.token
+        }
+        set {
+            dataStorage.token = newValue
+        }
+    }
+    
     private init() {}
     
     private struct OAuthTokenResponseBody: Decodable {
@@ -12,10 +31,9 @@ final class OAuth2Service {
         }
     }
     
-    private func makeOAuthTokenRequest(code:String) -> URLRequest? {
-        
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard var urlComponents = URLComponents(string: "https://unsplash.com/oauth/token") else {
-            print("Error: Invalid URLComponents")
+            print("[makeOAuthTokenRequest]: URLComponentsError - Не удалось создать URLComponents")
             return nil
         }
         urlComponents.queryItems = [
@@ -26,7 +44,7 @@ final class OAuth2Service {
             URLQueryItem(name: "grant_type", value: "authorization_code")
         ]
         guard let authTokenUrl = urlComponents.url else {
-            print("Error: Invalid URL")
+            print("[makeOAuthTokenRequest]: URLError - Не удалось создать URL")
             return nil
         }
         
@@ -36,70 +54,101 @@ final class OAuth2Service {
     }
     
     func fetchAuthToken(with code: String, completion: @escaping(Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
+        guard lastCode != code else {
+            print("[fetchAuthToken]: AuthServiceError - Запрос с кодом \(code) уже выполняется")
+            completion(.failure(AuthServiceError.invalidRequest))
+            return
+        }
+        task?.cancel()
+        lastCode = code
         
         guard let request = makeOAuthTokenRequest(code: code) else {
             completion(.failure(URLError(.badURL)))
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { result  in
+        let task = URLSession.shared.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
+            guard let self = self else { return }
+            
+            self.task = nil
+            self.lastCode = nil
+            
             switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let responseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    
-                    completion(.success(responseBody.accessToken))
-                } catch {
-                    print(error)
-                    completion(.failure(error))
-                }
+            case .success(let responseBody):
+                self.authToken = responseBody.accessToken
+                completion(.success(responseBody.accessToken))
                 
             case .failure(let error):
-                
+                print("[fetchAuthToken]: NetworkError - Ошибка получения токена: \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }
         
+        self.task = task
         task.resume()
     }
 }
 
 extension URLSession {
-    func dataTask(
-        with request: URLRequest,
-        completionHandler: @escaping (Result<Data, Error>) -> Void
-    ) -> URLSessionDataTask {
-        let fulFillCompletion: (Result<Data, Error>) -> Void = { result in
+    
+    func data(
+        for request: URLRequest,
+        completion: @escaping (Result<Data, Error>) -> Void
+    ) -> URLSessionTask {
+        
+        let fulfillCompletionOnTheMainThread: (Result<Data, Error>) -> Void = { result in
             DispatchQueue.main.async {
-                completionHandler(result)
+                completion(result)
             }
         }
         
         let task = dataTask(with: request) { data, response, error in
-            
             if let error = error {
-                print(error)
-                fulFillCompletion(.failure(error))
+                print("[data]: NetworkError - Ошибка запроса: \(error.localizedDescription), URL: \(request.url?.absoluteString ?? "")")
+                fulfillCompletionOnTheMainThread(.failure(error))
                 return
             }
-            if let response = response as? HTTPURLResponse,
-               let data = data {
-                
+            
+            if let response = response as? HTTPURLResponse, let data = data {
                 let statusCode = response.statusCode
                 
                 if (200 ..< 300).contains(statusCode) {
-                    fulFillCompletion(.success(data))
+                    fulfillCompletionOnTheMainThread(.success(data))
                 } else {
                     let serverError = URLError(.badServerResponse)
-                    print(serverError)
-                    fulFillCompletion(.failure(serverError))
-                    
+                    print("[data]: NetworkError - Некорректный статус-код: \(statusCode), URL: \(request.url?.absoluteString ?? "")")
+                    fulfillCompletionOnTheMainThread(.failure(serverError))
                 }
             } else {
                 let serverError = URLError(.badServerResponse)
-                print(serverError)
-                fulFillCompletion(.failure(serverError))
+                print("[data]: NetworkError - Пустой ответ сервера или отсутствует HTTPURLResponse")
+                fulfillCompletionOnTheMainThread(.failure(serverError))
+            }
+        }
+        return task
+    }
+    
+    func objectTask<T: Decodable>(
+        for request: URLRequest,
+        completion: @escaping (Result<T, Error>) -> Void
+    ) -> URLSessionTask {
+        let decoder = JSONDecoder()
+        
+        let task = data(for: request) { (result: Result<Data, Error>) in
+            switch result {
+            case .success(let data):
+                do {
+                    let decodedObject = try decoder.decode(T.self, from: data)
+                    completion(.success(decodedObject))
+                } catch {
+                    let rawDataString = String(data: data, encoding: .utf8) ?? ""
+                    print("[objectTask]: DecodingDataError - Ошибка декодирования: \(error.localizedDescription), Данные: \(rawDataString)")
+                    completion(.failure(error))
+                }
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
         return task

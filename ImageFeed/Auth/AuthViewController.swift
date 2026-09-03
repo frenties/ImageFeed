@@ -23,7 +23,7 @@ final class AuthViewController: UIViewController {
                 assertionFailure("Failed to prepare for \(showWebViewSegueIdentifier)")
                 return
             }
-
+            
             webViewViewController.delegate = self
         } else {
             super.prepare(for: segue, sender: sender)
@@ -37,18 +37,30 @@ final class AuthViewController: UIViewController {
         navigationItem.backBarButtonItem?.tintColor = UIColor(named:"ypBlack")
     }
     
-    private func fetchAuthToken(with code: String) {
-        oauth2Service.fetchAuthToken(with: code) { result in
-        }
+    private func showAlertError() {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+        let action = UIAlertAction(title: "Ок", style: .default, handler: nil)
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
     }
 }
+
 
 extension AuthViewController: WebViewViewControllerDelegate {
     
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         vc.dismiss(animated: true)
         
+        UIBlockingProgressHUD.show()
+        
         oauth2Service.fetchAuthToken(with: code) { [weak self] result in
+            
+            UIBlockingProgressHUD.dismiss()
+            
             guard let self = self else { return }
             
             switch result {
@@ -58,6 +70,7 @@ extension AuthViewController: WebViewViewControllerDelegate {
                 
             case .failure(let error):
                 print("Ошибка авторизации: \(error.localizedDescription)")
+                self.showAlertError()
             }
         }
     }

@@ -70,7 +70,7 @@ final class SplashViewController: UIViewController {
         profileService.fetchProfile(token) { [weak self] result in
             UIBlockingProgressHUD.dismiss()
             
-            guard let self = self else { return }
+            guard let self else { return }
             
             switch result {
             case .success(let profile):
@@ -87,8 +87,8 @@ final class SplashViewController: UIViewController {
     
     private func switchToTabBarController() {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene, let window = windowScene.windows.first else {
-                    assertionFailure("Invalid window configuration")
-                    return
+            assertionFailure("Invalid window configuration")
+            return
         }
         
         let tabBarController = UIStoryboard(name: "Main", bundle: .main).instantiateViewController(withIdentifier: "TabBarViewController")
@@ -100,7 +100,7 @@ extension SplashViewController: AuthViewControllerDelegate{
     
     func didAuthenticate(_ vc: AuthViewController) {
         vc.dismiss(animated: true) { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             
             if let token = self.storage.token {
                 self.fetchProfile(token)

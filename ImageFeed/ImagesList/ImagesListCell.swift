@@ -8,7 +8,7 @@ protocol ImagesListCellDelegate: AnyObject {
 enum FeedCellImageState {
     case loading
     case error
-    case finished(UIImage)
+    case success(UIImage)
 }
 
 final class ImagesListCell: UITableViewCell {
@@ -77,7 +77,7 @@ final class ImagesListCell: UITableViewCell {
             
             cellImageView.image = UIImage(resource: .stub)
             
-        case .finished(let image):
+        case .success(let image):
             skeletonView.isHidden = true
             cellImageView.image = image
         }
@@ -94,7 +94,7 @@ final class ImagesListCell: UITableViewCell {
             
             switch result {
             case .success(let value):
-                self.render(state: .finished(value.image))
+                self.render(state: .success(value.image))
             case .failure(_):
                 self.render(state: .error)
             }

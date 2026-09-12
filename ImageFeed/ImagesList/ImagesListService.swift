@@ -1,28 +1,24 @@
 import UIKit
 
-struct Photo {
-    let id: String
-    let size: CGSize
-    let createdAt: Date?
-    let welcomeDescription: String?
-    let thumbImageURL: String
-    let largeImageURL: String
-    let isLiked: Bool
-}
-
 final class ImagesListService {
+    // MARK: - Public Properties
+    
     private(set) var photos: [Photo] = []
     
     static let didChangeNotification = Notification.Name(
         rawValue: "ImagesListServiceDidChange"
     )
     
+    // MARK: - Private Properties
     private var lastLoadedPage: Int?
     private var currentTask: URLSessionTask?
+    private let dateFormatter = ISO8601DateFormatter()
+    private let urlSession: URLSession
     
-    let dateFormatter = ISO8601DateFormatter()
-    
-    init() {
+    // MARK: - Initializer
+    init(urlSession: URLSession) {
+        self.urlSession = urlSession
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(clearPhotosFromNotification),
@@ -31,6 +27,7 @@ final class ImagesListService {
         )
     }
     
+    // MARK: - Public Methods
     func fetchPhotosNextPage() {
         
         assert(Thread.isMainThread)
@@ -38,18 +35,9 @@ final class ImagesListService {
         
         let nextPage = (lastLoadedPage ?? 0) + 1
         
-        guard
-            let url = URL(
-                string: "https://api.unsplash.com/photos?page=\(nextPage)"
-            )
-        else { return }
-        var request = URLRequest(url: url)
-        request.setValue(
-            "Bearer \(OAuth2TokenStorage.shared.token ?? "")",
-            forHTTPHeaderField: "Authorization"
-        )
+        let request = makePhotosRequest(page: nextPage)
         
-        let task = URLSession.shared.dataTask(with: request) {
+        let task = urlSession.dataTask(with: request) {
             [weak self] data, response, error in
             guard let self else { return }
             
@@ -65,41 +53,16 @@ final class ImagesListService {
                 return
             }
             
-            let decoder = JSONDecoder()
-            
-            guard
-                let photoResults = try? decoder.decode(
-                    [PhotoResult].self,
-                    from: data
-                )
-            else {
+            guard let photoResults =  try? self.decodePhotos(from: data) else {
                 print("[fetchPhotosNextPage ImagesListService]: DecodingError - Failed to decode PhotoResult for page \(nextPage)")
                 DispatchQueue.main.async { self.currentTask = nil }
                 return
             }
             
-            let newPhotos = photoResults.map { result in
-                Photo(
-                    id: result.id,
-                    size: CGSize(width: result.width, height: result.height),
-                    createdAt: self.dateFormatter.date(
-                        from: result.created_at ?? ""
-                    ),
-                    welcomeDescription: result.description,
-                    thumbImageURL: result.urls.thumb,
-                    largeImageURL: result.urls.full,
-                    isLiked: result.liked_by_user
-                )
-            }
+            let newPhotos = self.mapPhotos(photoResults)
+            
             DispatchQueue.main.async {
-                self.photos.append(contentsOf: newPhotos)
-                
-                self.lastLoadedPage = nextPage
-                self.currentTask = nil
-                NotificationCenter.default.post(
-                    name: ImagesListService.didChangeNotification,
-                    object: self
-                )
+                self.updatePhotos(newPhotos, page: nextPage)
             }
         }
         
@@ -107,13 +70,61 @@ final class ImagesListService {
         task.resume()
     }
     
+    // MARK: - Private Methods
+    private func makePhotosRequest(page: Int) -> URLRequest {
+        guard let url = URL(string: "https://api.unsplash.com/photos?page=\(page)") else {
+            fatalError("Invalid URL for page \(page)")
+        }
+        var request = URLRequest(url: url)
+        request.setValue(
+            "Bearer \(OAuth2TokenStorage.shared.token ?? "")",
+            forHTTPHeaderField: "Authorization"
+        )
+        return request
+    }
+    
+    private func decodePhotos(from data: Data) throws -> [PhotoResult] {
+        let decoder = JSONDecoder()
+        return try decoder.decode([PhotoResult].self, from: data)
+    }
+    
+    private func mapPhotos(_ results: [PhotoResult]) -> [Photo] {
+        return results.map { result in
+            Photo(
+                id: result.id,
+                size: CGSize(width: result.width, height: result.height),
+                createdAt: self.dateFormatter.date(from: result.createdAt ?? ""),
+                welcomeDescription: result.description,
+                thumbImageURL: result.urls.thumb,
+                largeImageURL: result.urls.full,
+                isLiked: result.isLiked
+            )
+        }
+    }
+    
+    private func updatePhotos(_ photos: [Photo], page: Int) {
+        self.photos.append(contentsOf: photos)
+        self.lastLoadedPage = page
+        self.currentTask = nil
+        
+        NotificationCenter.default.post(
+            name: ImagesListService.didChangeNotification,
+            object: self
+        )
+    }
+    
+    // MARK: - Public Methods
+    
     func changeLike(
         photoId: String,
         isLike: Bool,
         _ completion: @escaping (Result<Void, Error>) -> Void
     ) {
         guard let url = URL(string: "https://api.unsplash.com/photos/\(photoId)/like")
-        else { return }
+        else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = isLike ? "POST" : "DELETE"
@@ -122,7 +133,7 @@ final class ImagesListService {
             forHTTPHeaderField: "Authorization"
         )
         
-        let task = URLSession.shared.dataTask(with: request) {
+        let task = urlSession.dataTask(with: request) {
             [weak self] _, _, error in
             guard let self else { return }
             
@@ -145,7 +156,7 @@ final class ImagesListService {
                         welcomeDescription: photo.welcomeDescription,
                         thumbImageURL: photo.thumbImageURL,
                         largeImageURL: photo.largeImageURL,
-                        isLiked: !photo.isLiked
+                        isLiked: isLike
                     )
                     
                     self.photos = self.photos.withReplaced(
@@ -171,6 +182,7 @@ final class ImagesListService {
     }
 }
 
+// MARK: - Array Extension
 extension Array {
     func withReplaced(itemAt index: Int, newValue: Element) -> [Element] {
         var modifiedArray = self

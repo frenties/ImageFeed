@@ -9,7 +9,7 @@ final class ImagesListViewController: UIViewController {
     // MARK: - Private Properties
     private let showSingleImageSegueIdentifier = "ShowSingleImage"
     
-    private let imagesListService = ImagesListService()
+    private let imagesListService = ImagesListService(urlSession: URLSession.shared)
     
     private var photos: [Photo] = []
     
@@ -17,8 +17,8 @@ final class ImagesListViewController: UIViewController {
     
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM yyyy"
         return formatter
     } ()
     
@@ -71,33 +71,33 @@ final class ImagesListViewController: UIViewController {
         
         photos = imagesListService.photos
         
-        if oldCount != newCount {
-            tableView.performBatchUpdates {
-                let indexPaths = (oldCount..<newCount).map { i in
-                    IndexPath(row: i, section: 0)
-                }
-                
-                tableView.insertRows(at: indexPaths, with: .automatic)
-            } completion: { _ in }
+        guard newCount > oldCount else {
+            tableView.reloadData()
+            return
         }
-    }
+        let indexPaths = (oldCount..<newCount).map {
+            IndexPath(row: $0, section: 0)
+        }
+        
+        tableView.insertRows(at: indexPaths, with: .automatic)
+}
+
+// MARK: - Public Methods
+func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
+    let photo = photos[indexPath.row]
     
-    // MARK: - Public Methods
-    func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
-        let photo = photos[indexPath.row]
-        
-        guard let url = URL(string: photo.thumbImageURL) else { return }
-        if let date = photo.createdAt {
-            cell.dateLabel.text = dateFormatter.string(from: date)
-        } else {
-            cell.dateLabel.text = ""
-        }
-        cell.setIsLiked(isLiked: photo.isLiked)
-        
-        cell.configure(with: url)
-        
-        cell.layoutIfNeeded()
+    guard let url = URL(string: photo.thumbImageURL) else { return }
+    if let date = photo.createdAt {
+        cell.dateLabel.text = dateFormatter.string(from: date)
+    } else {
+        cell.dateLabel.text = ""
     }
+    cell.setIsLiked(isLiked: photo.isLiked)
+    
+    cell.configure(with: url)
+    
+    cell.layoutIfNeeded()
+}
 }
 // MARK: - UITableViewDataSource
 extension ImagesListViewController: UITableViewDataSource {

@@ -2,16 +2,32 @@ import Foundation
 
 struct PhotoResult: Decodable {
     let id: String
-    let created_at: String?
-    let updated_at: String?
+    let createdAt: String?
+    let updatedAt: String?
     let width: Int
     let height: Int
     let color: String?
-    let blur_hash: String?
+    let blurHash: String?
     let likes: Int
-    let liked_by_user: Bool
+    let isLiked: Bool
     let description: String?
     let urls: UrlsResult
+    
+    enum CodingKeys: String, CodingKey {
+        
+        case id
+        case width
+        case height
+        case color
+        case likes
+        case description
+        case urls
+        
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case blurHash = "blur_hash"
+        case isLiked = "liked_by_user"
+    }
 }
 
 struct UrlsResult: Decodable {

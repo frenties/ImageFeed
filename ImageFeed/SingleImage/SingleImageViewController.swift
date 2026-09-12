@@ -5,7 +5,7 @@ final class SingleImageViewController: UIViewController {
     var image: UIImage?
     var largeImageURL : URL?
     
-    @IBOutlet var imageView: UIImageView!
+    @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var scrollView: UIScrollView!
     
     @IBAction private func didTapBackButton() {

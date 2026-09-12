@@ -63,6 +63,9 @@
                                                         <constraint firstAttribute="height" constant="44" id="YmS-DG-59O"/>
                                                     </constraints>
                                                     <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                    <connections>
+                                                        <action selector="likeButtonClicked" destination="gdh-Rk-QCA" eventType="touchUpInside" id="Zvf-qZ-ylf"/>
+                                                    </connections>
                                                 </button>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="4 июля 2026" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nYA-dM-wvN" userLabel="Data Label">
                                                     <rect key="frame" x="24" y="365" width="80" height="16"/>

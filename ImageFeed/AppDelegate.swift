@@ -1,9 +1,16 @@
-import UIKit
+import SwiftUI
+import ProgressHUD
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        
+        ProgressHUD.animationType = .activityIndicator
+        ProgressHUD.colorHUD = .white
+        ProgressHUD.colorAnimation = .black
+        
+        
         return true
     }
     
@@ -19,7 +26,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             
             sceneConfiguration.delegateClass = SceneDelegate.self
             
-             return sceneConfiguration
+            return sceneConfiguration
         }
 }
 

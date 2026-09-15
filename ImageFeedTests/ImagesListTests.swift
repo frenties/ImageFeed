@@ -4,51 +4,23 @@ import XCTest
 final class ImagesListTests: XCTestCase {
     
     func testViewControllerCallsViewDidLoad() {
-        // given
+        
+        // Given
+        
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let viewController = storyboard.instantiateViewController(withIdentifier: "ImagesListViewController") as! ImagesListViewController
+        let viewController = storyboard.instantiateViewController(withIdentifier: "ImagesListViewController") as? ImagesListViewController
         let presenterSpy = ImagesListPresenterSpy()
-        viewController.configure(presenterSpy)
+        viewController?.configure(presenterSpy)
         
-        // when
-        _ = viewController.view
+        // When
         
-        // then
-        XCTAssertTrue(presenterSpy.viewDidLoadCalled, "ViewController должен вызвать viewDidLoad у презентера")
-    }
-}
-
-final class ImagesListPresenterSpy: ImagesListPresenterProtocol {
-    weak var view: ImagesListViewControllerProtocol?
-    var viewDidLoadCalled = false
-    var photosCount: Int = 0
-    
-    func viewDidLoad() {
-        viewDidLoadCalled = true
-    }
-    
-    func photo(at index: Int) -> Photo {
-        return Photo(
-            id: "1",
-            size: .zero,
-            createdAt: nil,
-            welcomeDescription: nil,
-            thumbImageURL: "",
-            largeImageURL: "",
-            isLiked: false
+        _ = viewController?.view
+        
+        // Then
+        XCTAssertEqual(
+            presenterSpy.viewDidLoadCallsCount, 1,
+            "ViewController должен вызвать viewDidLoad у презентера ровно один раз"
         )
     }
-    
-    func calculateCellHeight(at index: Int, tableViewWidth: Double) -> Double {
-        return 200.0
-    }
-    
-    func formatPhotoDate(at index: Int) -> String? {
-        return "14 августа 2026"
-    }
-    
-    func willDisplayCell(at index: Int) {}
-    
-    func cellLikeButtonTapped(at index: Int, completion: @escaping (Result<Bool, Error>) -> Void) {}
 }
 

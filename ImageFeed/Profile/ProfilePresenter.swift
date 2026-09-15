@@ -21,16 +21,19 @@ final class ProfilePresenter: ProfilePresenterProtocol {
     private var profileImageServiceObserver: NSObjectProtocol?
     
     func viewDidLoad() {
-        
-        if let profile = profileService.profile {
-            view?.updateProfileDetails(
-                name: profile.name,
-                loginName: profile.loginName,
-                bio: profile.bio
-            )
+        updateProfileDetails()
+        observeAvatarChanges()
+    }
+    private func updateProfileDetails() {
+        guard let profile = profileService.profile else {
+            return
         }
         
-        observeAvatarChanges()
+        view?.updateProfileDetails(
+            name: profile.name,
+            loginName: profile.loginName,
+            bio: profile.bio
+        )
     }
     
     func didTapLogoutButton() {

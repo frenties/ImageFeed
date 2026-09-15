@@ -24,33 +24,44 @@ final class ImagesListViewController: UIViewController & ImagesListViewControlle
             configure(ImagesListPresenter())
         }
         
-        tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
+        configureTableView()
+        presenter.viewDidLoad()
+        
+    }
+    // MARK: - Private Methods
+    private func configureTableView() {
+        tableView.contentInset = UIEdgeInsets(
+            top: 12,
+            left: 0,
+            bottom: 12,
+            right: 0)
         tableView.delegate = self
         tableView.dataSource = self
-        
-        presenter.viewDidLoad()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "ShowSingleImage" {
-            guard
-                let viewController = segue.destination as? SingleImageViewController,
-                let indexPath = sender as? IndexPath
-                    else {
-                super.prepare(for: segue, sender: sender)
-                return
-            }
-            
-            let photo = presenter.photo(at: indexPath.row)
-            
-            if let url = URL(string: photo.largeImageURL) {
-                viewController.largeImageURL = url
-            }
-            if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell {
-                viewController.image = cell.cellImageView.image
-            }
-        } else {
-            super.prepare(for: segue, sender: sender)
+        
+        guard segue.identifier == showSingleImageSegueIdentifier else {
+                  super.prepare(for: segue, sender: sender)
+                  return
+              }
+        
+        guard
+            let viewController = segue.destination as? SingleImageViewController,
+            let indexPath = sender as? IndexPath
+        else {
+            assertionFailure("Failed to prepare for ShowSingleImage")
+            return
+        }
+
+        let photo = presenter.photo(at: indexPath.row)
+
+        if let url = URL(string: photo.largeImageURL) {
+            viewController.largeImageURL = url
+        }
+
+        if let cell = tableView.cellForRow(at: indexPath) as? ImagesListCell {
+            viewController.image = cell.cellImageView.image
         }
     }
     
@@ -71,6 +82,7 @@ final class ImagesListViewController: UIViewController & ImagesListViewControlle
     
     
     // MARK: - Public Methods
+    
     func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
         let photo = presenter.photo(at: indexPath.row)
         guard let url = URL(string: photo.thumbImageURL) else { return }

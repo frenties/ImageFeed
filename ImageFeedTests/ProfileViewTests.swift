@@ -15,15 +15,15 @@ final class ProfilePresenterSpy: ProfilePresenterProtocol {
 final class ProfileViewTests: XCTestCase {
     
     func testViewControllerCallsViewDidLoad() {
-        // given
+        // Given
         let viewController = ProfileViewController()
         let presenterSpy = ProfilePresenterSpy()
         viewController.configure(presenterSpy)
         
-        // when
+        // When
         _ = viewController.view
         
-        // then
+        // Then
         XCTAssertTrue(presenterSpy.viewDidLoadCalled, "ViewController должен вызвать viewDidLoad у презентера")
     }
 }

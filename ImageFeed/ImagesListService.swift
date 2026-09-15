@@ -121,7 +121,7 @@ final class ImagesListService {
         _ completion: @escaping (Result<Void, Error>) -> Void
     ) {
         guard let url = URL(string: "https://api.unsplash.com/photos/\(photoId)/like")
-        else {
+                else {
             completion(.failure(URLError(.badURL)))
             return
         }

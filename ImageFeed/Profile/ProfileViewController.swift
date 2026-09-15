@@ -1,11 +1,9 @@
 import UIKit
 import Kingfisher
 
-final class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController & ProfileViewControllerProtocol {
     
-    private let profileService = ProfileService.shared
-    
-    private var profileImageServiceObserver: NSObjectProtocol?
+    var presenter: ProfilePresenterProtocol!
     
     private var animationLayers = Set<CALayer>()
     
@@ -22,8 +20,78 @@ final class ProfileViewController: UIViewController {
     private var loginNameLabel: UILabel?
     private var descriptionLabel: UILabel?
     
+    func configure(_ presenter: ProfilePresenterProtocol) {
+        self.presenter = presenter
+        self.presenter.view = self
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if presenter == nil {
+            configure(ProfilePresenter())
+        }
+        
+        setupUI()
+        presenter.viewDidLoad()
+    }
+    
+    
+    func updateProfileDetails(name: String, loginName: String, bio: String?) {
+        nameLabel?.text = name
+        loginNameLabel?.text = loginName
+        descriptionLabel?.text = bio
+    }
+    
+    func updateAvatar(with url: URL) {
+        avatarImageView.kf.setImage(
+            with: url,
+            placeholder: UIImage(resource: .avatar)
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                break
+            case .failure:
+                self.avatarImageView.image = UIImage(resource: .avatar)
+            }
+            self.animationLayers.forEach { layer in
+                layer.removeFromSuperlayer()
+            }
+            self.animationLayers.removeAll()
+        }
+    }
+    
+    @objc
+    private func didTapButton() {
+        presenter.didTapLogoutButton()
+    }
+    
+    func showLogoutAlert() {
+        let alert = UIAlertController(
+            title: "Пока, пока!",
+            message: "Уверен, что хотите выйти?",
+            preferredStyle: .alert
+        )
+        
+        let yesAction = UIAlertAction(title: "Да", style: .default) { _ in
+            ProfileLogoutService.shared.logout()
+            
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first
+                    else { return }
+            
+            let splashViewController = SplashViewController()
+            window.rootViewController = splashViewController
+        }
+        
+        let noAction = UIAlertAction(title: "Нет", style: .cancel)
+        alert.addAction(yesAction)
+        alert.addAction(noAction)
+        present(alert, animated: true)
+    }
+    
+    private func setupUI() {
         view.backgroundColor = .ypBlack
         
         view.addSubview(avatarImageView)
@@ -134,83 +202,5 @@ final class ProfileViewController: UIViewController {
         bioGradient.add(gradientChangeAnimation, forKey: "locationsChange")
         animationLayers.insert(bioGradient)
         bioLabel.layer.addSublayer(bioGradient)
-        
-        profileImageServiceObserver = NotificationCenter.default
-            .addObserver(
-                forName: ProfileImageService.didChangeNotification,
-                object: ProfileImageService.shared,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self else { return }
-                print("=== [Уведомление] Сигнал о новой аватарке получен в контроллере! ===")
-                self.updateAvatar()
-            }
-        
-        if let profile = profileService.profile {
-            updateProfileDetails(profile: profile)
-        }
-        
-        updateAvatar()
-    }
-    
-    private func updateAvatar() {
-        guard
-            let profileImageURL = ProfileImageService.shared.avatarURL,
-            let url = URL(string: profileImageURL)
-        else { return }
-        
-        avatarImageView.kf.setImage(
-            with: url,
-            placeholder: UIImage(resource: .avatar)
-            
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success:
-                break
-            case .failure:
-                self.avatarImageView.image = UIImage(resource: .avatar)
-            }
-            self.animationLayers.forEach { layer in
-                layer.removeFromSuperlayer()
-            }
-            self.animationLayers.removeAll()
-        }
-    }
-    
-    private func updateProfileDetails(profile: Profile) {
-        nameLabel?.text = profile.name
-        loginNameLabel?.text = profile.loginName
-        descriptionLabel?.text = profile.bio
-    }
-    
-    @objc
-    private func didTapButton() {
-        let alert = UIAlertController(
-            title: "Пока, пока!",
-            message: "Уверен, что хотите выйти?",
-            preferredStyle: .alert
-        )
-        
-        let yesAction = UIAlertAction(title: "Да", style: .default) { _ in
-            
-            ProfileLogoutService.shared.logout()
-            
-            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = windowScene.windows.first
-            else {
-                return
-            }
-            
-            let splashViewController = SplashViewController()
-            
-            window.rootViewController = splashViewController
-        }
-        
-        let noAction = UIAlertAction(title: "Нет", style: .cancel)
-        alert.addAction(yesAction)
-        alert.addAction(noAction)
-        present(alert, animated: true)
     }
 }
-
